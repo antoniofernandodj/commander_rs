@@ -1,4 +1,4 @@
-# Make.cmd - A DSL for Command Automation
+# Commander.rs - A DSL for Command Automation
 
 A Rust-based domain-specific language (DSL) interpreter for defining and executing command workflows with support for dependencies, conditionals, loops, and variable substitution.
 
@@ -24,13 +24,13 @@ Create a `Make.cmd` file with your command definitions, then run:
 
 ```bash
 # Execute a top-level command
-./make_cmd <command>
+cmd <command>
 
 # Execute a subcommand
-./make_cmd <command> <subcommand>
+cmd <command> <subcommand>
 
 # Pass arguments (prefixed with --)
-./make_cmd <command> --arg1 --arg2
+cmd <command> --arg1 --arg2
 ```
 
 ## Syntax
@@ -122,7 +122,7 @@ docker {
 }
 ```
 
-Run with: `./make_cmd docker build`
+Run with: `cmd docker build`
 
 ### Documentation Comments
 
@@ -194,12 +194,12 @@ clean {
 
 Run the full CI pipeline:
 ```bash
-./make_cmd ci
+cmd ci
 ```
 
 Run only tests (with auto-build via dependency):
 ```bash
-./make_cmd ci test
+cmd ci test
 ```
 
 ## Output
