@@ -289,13 +289,12 @@ build_warnings {
 @REM Lista arquivos de código
 list_sources {
     for file in [
-        "src/main.c",
-        "src/utils.c",
-        "src/net.c",
-        "src/db.c"
+        "src/main.rs",
+        "src/grammar.pest"
     ] {
+        exec(echo "Showing content for $file:\n\n");
         exec(
-            echo $file
+            cat $file
         );
     }
 }

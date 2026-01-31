@@ -1,6 +1,6 @@
 use pest::Parser;
 use pest_derive::Parser;
-use pest::iterators::Pair;
+use pest::iterators::{Pair, Pairs};
 use std::collections::HashMap;
 use std::process::Command;
 
@@ -88,49 +88,117 @@ fn parse_value(pair: Pair<Rule>) -> String {
     }
 }
 
-fn parse_statements(pairs: pest::iterators::Pairs<Rule>) -> Vec<Statement> {
+fn parse_statements(pairs: Pairs<Rule>) -> Vec<Statement> {
     let mut statements = Vec::new();
     
     for stmt in pairs {
         match stmt.as_rule() {
             Rule::node => {
-                statements.push(Statement::Command(parse_node(stmt)));
+                statements.push(
+                    Statement::Command(
+                        parse_node(stmt)
+                    )
+                );
             }
             Rule::exec => {
-                let body = stmt.into_inner().next().unwrap().as_str().to_string();
+                let body =
+                    stmt
+                        .into_inner()
+                        .next()
+                        .unwrap()
+                        .as_str()
+                        .to_string();
+
                 statements.push(Statement::Exec(body));
             }
             Rule::assignment => {
-                let mut parts = stmt.into_inner();
-                let var_name = parts.next().unwrap().as_str().to_string();
-                let value_pair = parts.next().unwrap();
+                let mut parts =
+                    stmt
+                        .into_inner();
+
+                let var_name =
+                    parts
+                        .next()
+                        .unwrap()
+                        .as_str()
+                        .to_string();
+
+                let value_pair =
+                    parts
+                        .next()
+                        .unwrap();
+
                 let value = parse_value(value_pair);
                 statements.push(Statement::Assignment(var_name, value));
             }
             Rule::depends => {
-                let deps: Vec<String> = stmt.into_inner()
-                    .map(|p| p.as_str().to_string())
+                let deps: Vec<String> = stmt
+                    .into_inner()
+                    .map(
+                        |p| p.as_str().to_string()
+                    )
                     .collect();
                 statements.push(Statement::Depends(deps));
             }
             Rule::if_stmt => {
-                let mut parts = stmt.into_inner();
+                let mut parts =
+                    stmt
+                        .into_inner();
                 
-                let cond_pair = parts.next().unwrap();
-                let mut cond_parts = cond_pair.into_inner();
-                let left = parse_value(cond_parts.next().unwrap());
-                let op = cond_parts.next().unwrap().as_str().to_string();
-                let right = parse_value(cond_parts.next().unwrap());
+                let cond_pair =
+                    parts
+                        .next()
+                        .unwrap();
+
+                let mut cond_parts =
+                    cond_pair
+                        .into_inner();
+
+                let left =
+                    parse_value(
+                        cond_parts
+                            .next()
+                            .unwrap()
+                    );
+
+                let op =
+                    cond_parts
+                        .next()
+                        .unwrap()
+                        .as_str()
+                        .to_string();
+
+                let right =
+                    parse_value(
+                        cond_parts
+                            .next()
+                            .unwrap()
+                    );
+
                 
-                let condition = Condition { left, op, right };
+                let condition =
+                    Condition { left, op, right };
+
                 
-                let then_block_pair = parts.next().unwrap();
-                let then_block = parse_statements(then_block_pair.into_inner());
+                let then_block_pair =
+                    parts.next().unwrap();
+
+                let then_block =
+                    parse_statements(
+                        then_block_pair
+                            .into_inner()
+                    );
+
                 
-                let else_block = parts.next().map(|else_pair| {
-                    parse_statements(else_pair.into_inner())
+                let else_block =
+                    parts.next().map(
+                        |else_pair| {
+                        parse_statements(
+                            else_pair
+                                .into_inner()
+                        )
                 });
-                
+
                 statements.push(Statement::If {
                     condition,
                     then_block,
@@ -138,18 +206,43 @@ fn parse_statements(pairs: pest::iterators::Pairs<Rule>) -> Vec<Statement> {
                 });
             }
             Rule::for_stmt => {
-                let mut parts = stmt.into_inner();
-                let var = parts.next().unwrap().as_str().to_string();
+                let mut parts =
+                    stmt.into_inner();
+
+                let var =
+                    parts
+                        .next()
+                        .unwrap()
+                        .as_str()
+                        .to_string();
                 
-                let array_pair = parts.next().unwrap();
-                let items: Vec<String> = array_pair.into_inner()
-                    .map(|p| parse_value(p))
-                    .collect();
+                let array_pair =
+                    parts
+                        .next()
+                        .unwrap();
+
+                let items: Vec<String> =
+                    array_pair
+                        .into_inner()
+                        .map(
+                            |p| parse_value(p)
+                        )
+                        .collect();
                 
-                let block_pair = parts.next().unwrap();
-                let block = parse_statements(block_pair.into_inner());
+                let block_pair =
+                    parts
+                        .next()
+                        .unwrap();
+
+                let block =
+                    parse_statements(
+                        block_pair
+                            .into_inner()
+                    );
                 
-                statements.push(Statement::For { var, items, block });
+                statements.push(
+                    Statement::For { var, items, block }
+                );
             }
             _ => {}
         }
@@ -160,19 +253,21 @@ fn parse_statements(pairs: pest::iterators::Pairs<Rule>) -> Vec<Statement> {
 
 fn parse_node(pair: Pair<Rule>) -> CommandNode {
     let mut inner = pair.into_inner();
-    
+
     let mut current = inner.next().unwrap();
     if current.as_rule() == Rule::doc_comment {
         current = inner.next().unwrap();
     }
-    
+
     let name = current.as_str().to_string();
-    
+
     current = inner.next().unwrap();
-    
+
     let params = if current.as_rule() == Rule::param_list {
         let p: Vec<String> = current.into_inner()
-            .map(|p| p.as_str().to_string())
+            .map(
+                |p| p.as_str().to_string()
+            )
             .collect();
         current = inner.next().unwrap();
         p
@@ -180,19 +275,23 @@ fn parse_node(pair: Pair<Rule>) -> CommandNode {
         Vec::new()
     };
     
-    let statements = parse_statements(current.into_inner());
+    let statements =
+        parse_statements(current.into_inner());
     
     CommandNode { name, params, statements }
 }
 
 fn parse_program(input: &str) -> Vec<CommandNode> {
-    let mut pairs = DSLParser::parse(Rule::program, input)
+    let mut pairs =
+        DSLParser::parse(Rule::program, input)
         .expect("parse error");
     
     let program = pairs.next().unwrap();
     
     program.into_inner()
-        .filter(|p| p.as_rule() == Rule::node)
+        .filter(
+            |p| p.as_rule() == Rule::node
+        )
         .map(|p| parse_node(p))
         .collect()
 }
@@ -212,27 +311,39 @@ fn execute_statements_only(
                 let expanded = env.expand(cmd);
                 println!("\x1b[36m[exec]\x1b[0m {}", expanded.trim());
                 
-                let output = Command::new("sh")
-                    .arg("-c")
-                    .arg(&expanded)
-                    .output();
+                let output =
+                    Command::new("sh")
+                        .arg("-c")
+                        .arg(&expanded)
+                        .output();
 
                 match output {
                     Ok(result) => {
                         if !result.stdout.is_empty() {
-                            print!("{}", String::from_utf8_lossy(&result.stdout));
+                            print!(
+                                "{}",
+                                String::from_utf8_lossy(&result.stdout)
+                            );
                         }
                         
                         if !result.status.success() {
-                            eprintln!("\x1b[31m[error]\x1b[0m Command failed with status: {}", 
-                                result.status);
+                            eprintln!(
+                                "\x1b[31m[error]\x1b[0m Command failed with status: {}", 
+                                result.status
+                            );
                             if !result.stderr.is_empty() {
-                                eprintln!("{}", String::from_utf8_lossy(&result.stderr));
+                                eprintln!(
+                                    "{}",
+                                    String::from_utf8_lossy(&result.stderr)
+                                );
                             }
                         }
                     }
                     Err(e) => {
-                        eprintln!("\x1b[31m[error]\x1b[0m Failed to execute command: {}", e);
+                        eprintln!(
+                            "\x1b[31m[error]\x1b[0m Failed to execute command: {}",
+                            e
+                        );
                     }
                 }
             }
@@ -246,29 +357,64 @@ fn execute_statements_only(
                     if let Some(dep_node) = all_nodes.get(dep) {
                         println!("\x1b[35m[depends]\x1b[0m {}", dep);
                         let mut dep_path = Vec::new();
-                        execute(dep_node, &mut dep_path, env, all_nodes, &[], None);
+                        execute(
+                            dep_node,
+                            &mut dep_path,
+                            env,
+                            all_nodes,
+                            &[],
+                            None
+                        );
                     }
                 }
             }
-            Statement::If { condition, then_block, else_block } => {
+            Statement::If {
+                condition,
+                then_block,
+                else_block
+            } => {
                 if env.eval_condition(condition) {
-                    execute_statements_only(then_block, path, env, all_nodes);
-                } else if let Some(else_stmts) = else_block {
-                    execute_statements_only(else_stmts, path, env, all_nodes);
+                    execute_statements_only(
+                        then_block,
+                        path,
+                        env,
+                        all_nodes
+                    );
+                } else if let Some(
+                    else_stmts
+                ) = else_block {
+                    execute_statements_only(
+                        else_stmts,
+                        path,
+                        env,
+                        all_nodes
+                    );
                 }
             }
-            Statement::For { var, items, block } => {
+            Statement::For {
+                var,
+                items,
+                block
+            } => {
                 for item in items {
                     let expanded = env.expand(item);
                     env.set(var.clone(), expanded);
-                    execute_statements_only(block, path, env, all_nodes);
+                    execute_statements_only(
+                        block,
+                        path,
+                        env,
+                        all_nodes
+                    );
                 }
             }
         }
     }
 }
 
-fn find_subnode<'a>(node: &'a CommandNode, name: &str) -> Option<&'a CommandNode> {
+fn find_subnode<'a>(
+    node: &'a CommandNode,
+    name: &str
+) -> Option<&'a CommandNode> {
     for stmt in &node.statements {
         if let Statement::Command(child) = stmt {
             if child.name == name {
@@ -332,7 +478,8 @@ fn find_node<'a>(
 }
 
 fn main() {
-    let input = std::fs::read_to_string("Make.cmd")
+    let input =
+        std::fs::read_to_string("Make.cmd")
         .expect("Não foi possível ler o arquivo");
 
     let nodes = parse_program(&input);
@@ -343,23 +490,44 @@ fn main() {
         return
     }
 
-    let all_nodes: HashMap<String, &CommandNode> = nodes.iter()
-        .map(|n| (n.name.clone(), n))
-        .collect();
+    let all_nodes: HashMap<String, &CommandNode> =
+        nodes
+            .iter()
+            .map(
+                |n| (n.name.clone(), n)
+            )
+            .collect();
 
     let mut path = Vec::new();
     let mut env = Environment::new();
 
     if args.is_empty() {
-        let start = nodes.first().expect("nenhum nó encontrado");
-        execute(start, &mut path, &mut env, &all_nodes, &[], None);
+        let start =
+            nodes
+                .first()
+                .expect("nenhum nó encontrado");
+
+        execute(
+            start,
+            &mut path,
+            &mut env,
+            &all_nodes,
+            &[],
+            None
+        );
+
     } else {
         let mut cmd_path = vec![];
         let mut cmd_args = vec![];
 
         for arg in &args {
             if arg.starts_with("--") {
-                cmd_args.push(arg.trim_start_matches("--").to_string());
+                cmd_args.push(
+                    arg
+                        .trim_start_matches("--")
+                        .to_string()
+                );
+
             } else {
                 cmd_path.push(arg.clone());
             }
@@ -375,12 +543,29 @@ fn main() {
 
         if let Some(root_node) = find_node(&nodes, root_name) {
             if subpath.is_empty() {
-                execute(root_node, &mut path, &mut env, &all_nodes, &cmd_args, None);
+                execute(
+                    root_node,
+                    &mut path,
+                    &mut env,
+                    &all_nodes,
+                    &cmd_args,
+                    None
+                );
             } else {
-                execute(root_node, &mut path, &mut env, &all_nodes, &cmd_args, Some(subpath));
+                execute(
+                    root_node,
+                    &mut path,
+                    &mut env,
+                    &all_nodes,
+                    &cmd_args,
+                    Some(subpath)
+                );
             }
         } else {
-            eprintln!("\x1b[31m[error]\x1b[0m Command '{}' not found", root_name);
+            eprintln!(
+                "\x1b[31m[error]\x1b[0m Command '{}' not found",
+                root_name
+            );
         }
     }
 }
