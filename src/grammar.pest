@@ -1,0 +1,43 @@
+WHITESPACE  = _{ " " | "\t" | "\r" | "\n" }
+
+COMMENT     = _{ "@REM" ~ (!"\n" ~ ANY)* ~ "\n" | "//" ~ (!"\n" ~ ANY)* ~ "\n" | "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
+
+doc_comment = @{ "///" ~ (!"\n" ~ ANY)* }
+
+ident       = @{ (ASCII_ALPHANUMERIC | "_")+ }
+
+variable    = { "$" ~ ident }
+
+string_lit  = { "\"" ~ (!"\"" ~ ANY)* ~ "\"" }
+
+value       = _{ string_lit | variable }
+
+param_list  = { "(" ~ (ident ~ ("," ~ ident)*)? ~ ")" }
+
+call        = { ident ~ "(" ~ (value ~ ("," ~ value)*)? ~ ")" ~ ";"? }
+
+operator    = { "==" | "!=" | ">" | "<" }
+
+condition   = { value ~ operator ~ value }
+
+block       = { "{" ~ statement* ~ "}" }
+
+if_stmt     = { "if" ~ condition ~ block ~ ("else" ~ block)? }
+
+array       = { "[" ~ (value ~ ("," ~ value)*)? ~ "]" }
+
+for_stmt    = { "for" ~ ident ~ "in" ~ array ~ block }
+
+node        = { doc_comment? ~ ident ~ param_list? ~ block }
+
+program     = { SOI ~ WHITESPACE* ~ node+ ~ WHITESPACE* ~ EOI }
+
+assignment  = { "let" ~ ident ~ "=" ~ value ~ ";"? }
+
+depends     = { "depends" ~ "(" ~ ident ~ ("," ~ ident)* ~ ")" ~ ";"? }
+
+statement   = _{ depends | if_stmt | for_stmt | assignment | node | exec | call }
+
+exec        = { "exec" ~ "(" ~ exec_body ~ ")" ~ ";"? }
+
+exec_body   = { (!")" ~ ANY)* }
