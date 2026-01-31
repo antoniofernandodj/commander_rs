@@ -39,8 +39,8 @@ cmd <command> --arg1 --arg2
 
 ```
 build {
-    exec(echo "Building project...")
-    exec(cargo build --release)
+    exec(echo "Building project...");
+    exec(cargo build --release);
 }
 ```
 
@@ -48,8 +48,8 @@ build {
 
 ```
 deploy(environment) {
-    exec(echo "Deploying to $environment")
-    exec(./deploy.sh $environment)
+    exec(echo "Deploying to $environment");
+    exec(./deploy.sh $environment);
 }
 ```
 
@@ -61,7 +61,7 @@ Run with: `./make_cmd deploy --production`
 setup {
     let project_name = "my-app";
     let version = "1.0.0";
-    exec(echo "Setting up $project_name v$version")
+    exec(echo "Setting up $project_name v$version");
 }
 ```
 
@@ -69,12 +69,12 @@ setup {
 
 ```
 test {
-    depends(build)
-    exec(cargo test)
+    depends(build);
+    exec(cargo test);
 }
 
 build {
-    exec(cargo build)
+    exec(cargo build);
 }
 ```
 
@@ -83,12 +83,12 @@ build {
 ```
 deploy(env) {
     if $env == "production" {
-        exec(echo "Deploying to production with extra checks")
-        exec(./safety-check.sh)
+        exec(echo "Deploying to production with extra checks");
+        exec(./safety-check.sh);
     } else {
-        exec(echo "Deploying to $env")
+        exec(echo "Deploying to $env");
     }
-    exec(./deploy.sh $env)
+    exec(./deploy.sh $env);
 }
 ```
 
@@ -97,8 +97,8 @@ deploy(env) {
 ```
 clean {
     for dir in ["target", "dist", "build"] {
-        exec(rm -rf $dir)
-        exec(echo "Cleaned $dir")
+        exec(rm -rf $dir);
+        exec(echo "Cleaned $dir");
     }
 }
 ```
@@ -108,16 +108,16 @@ clean {
 ```
 docker {
     build {
-        exec(docker build -t myapp .)
+        exec(docker build -t myapp .);
     }
     
     run {
-        depends(build)
-        exec(docker run -p 8080:8080 myapp)
+        depends(build);
+        exec(docker run -p 8080:8080 myapp);
     }
     
     clean {
-        exec(docker system prune -f)
+        exec(docker system prune -f);
     }
 }
 ```
@@ -129,7 +129,7 @@ Run with: `cmd docker build`
 ```
 /// Builds the entire project in release mode
 build {
-    exec(cargo build --release)
+    exec(cargo build --release);
 }
 ```
 
@@ -166,28 +166,28 @@ build {
 ```
 /// Main build pipeline
 ci {
-    depends(clean)
+    depends(clean);
     
     let env = "development";
     
     build {
-        exec(echo "Building in $env mode...")
-        exec(cargo build)
+        exec(echo "Building in $env mode...");
+        exec(cargo build);
     }
     
     test {
-        depends(build)
-        exec(cargo test)
+        depends(build);
+        exec(cargo test);
     }
     
     lint {
-        exec(cargo clippy)
+        exec(cargo clippy);
     }
 }
 
 clean {
     for dir in ["target", "dist"] {
-        exec(rm -rf $dir)
+        exec(rm -rf $dir);
     }
 }
 ```
